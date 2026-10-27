@@ -1,5 +1,3 @@
-[writing-block.md](https://github.com/user-attachments/files/34036439/writing-block.md)[Upload# Forest Inventory and Inspection Management System
-
 A Python-based application for registering, managing, and consulting forest inventory data. The system allows users to manage field teams, geographic clusters, inspections, tree counts, and botanical samples through an interactive interface.
 
 Data is stored in CSV files, allowing records to persist between executions without requiring an external database.
