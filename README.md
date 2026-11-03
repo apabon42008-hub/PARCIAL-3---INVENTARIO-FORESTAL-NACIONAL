@@ -1,360 +1,140 @@
-A Python-based application for registering, managing, and consulting forest inventory data. The system allows users to manage field teams, geographic clusters, inspections, tree counts, and botanical samples through an interactive interface.
+# Inventario Forestal Nacional (IFN)
 
-Data is stored in CSV files, allowing records to persist between executions without requiring an external database.
+Software de apoyo para el registro y la consulta de la información del Inventario Forestal Nacional del IDEAM. Es el trabajo final de semestre del curso **Programación I** de la Universidad de Santander.
 
-## Table of Contents
+[![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/TU_USUARIO/TU_REPOSITORIO/blob/main/IFN_Inventario_Forestal.ipynb)
 
-- [Project Overview](#project-overview)
-- [Features](#features)
-- [Technologies](#technologies)
-- [System Architecture](#system-architecture)
-- [Data Model](#data-model)
-- [Workflow](#workflow)
-- [Installation and Execution](#installation-and-execution)
-- [How to Use](#how-to-use)
-- [Project Structure](#project-structure)
-- [Data Validation](#data-validation)
-- [Future Improvements](#future-improvements)
-- [Project Scope](#project-scope)
-- [Author](#author)
+> Para que el botón funcione, reemplace `TU_USUARIO/TU_REPOSITORIO` en el enlace por la ruta real del repositorio.
 
-## Project Overview
+## Contexto
 
-The system organizes information collected during forest inventory activities.
+El IDEAM (Instituto de Hidrología, Meteorología y Estudios Ambientales) adelanta el Inventario Forestal Nacional. Para hacerlo, el territorio colombiano se divide en **conglomerados**, y cada uno se asigna a una **brigada**. Una brigada está formada por un líder, profesionales de distintas ramas y coinvestigadores locales.
 
-Its data model connects field teams to geographic clusters, clusters to inspections, and inspections to tree counts and botanical samples. Users can register new records and retrieve the information associated with a selected inspection.
+Durante cada inspección, la brigada sigue estos pasos:
 
-The graphical interface is built with `ipywidgets`, providing interactive buttons, text fields, numerical inputs, and dropdown menus.
+1. Se desplaza hasta el centroide del conglomerado.
+2. Cuenta los árboles de cada subparcela según su diámetro: fustales, latizales y brinzales.
+3. Toma muestras de especies vegetales con su nombre común y su uso (medicinal, alimenticio o maderable).
+4. Envía las muestras al laboratorio, que determina el nombre científico.
 
-### General Objective
+Este programa permite registrar ese proceso en orden y consultar toda la información de cualquier inspección.
 
-To develop a tool for registering, organizing, and consulting forest inspection data, supporting the management of field teams, study locations, and collected information.
+## Requisitos del proyecto
 
-## Features
-
-| Feature | Description |
+| Requisito | Cómo se cumple |
 |---|---|
-| Field Team Registration | Stores team leaders, professionals, and local co-researchers. |
-| Geographic Cluster Registration | Records departments, municipalities, geographic coordinates, and assigned teams. |
-| Inspection Registration | Creates inspections associated with existing geographic clusters. |
-| Tree Count Registration | Stores the number of mature trees, saplings, and seedlings recorded in each subplot. |
-| Botanical Sample Registration | Records common names, usage categories, and scientific names. |
-| Inspection Consultation | Retrieves the location, assigned team, tree counts, and botanical samples associated with an inspection. |
-| Inspection List Refresh | Reloads available inspection records for consultation. |
-| Persistent Data Storage | Saves information in CSV files. |
-| Automatic Identifier Generation | Generates sequential identifiers for teams, clusters, inspections, and samples. |
+| Consultar cualquier inspección con los datos del conglomerado, la brigada, el conteo y el muestreo | Opción **7. Consultar inspección** |
+| Arquitectura de tres capas | Capa de datos, capa lógica y capa de presentación, separadas dentro del código |
+| Persistencia en archivos de texto plano | Archivos `.csv` |
+| Interacción con el usuario | Interfaz con `ipywidgets` dentro de Google Colab |
 
-## Technologies
+## Funcionalidades
 
-- **Python:** Main programming language.
-- **CSV:** Data storage format.
-- **OS:** Checks whether storage files exist.
-- **ipywidgets:** Builds the interactive interface.
-- **IPython.display:** Displays interface components and updates the output area.
+El menú sigue el orden del proceso del IFN. Cada paso se habilita solo cuando existen los datos que necesita.
 
-## System Architecture
+1. **Registrar brigada.** Se registran el líder (nombre completo y profesión), uno o más profesionales (nombre completo y profesión) y uno o más coinvestigadores locales (nombre completo).
+2. **Registrar conglomerado.** Se eligen el departamento y el municipio de una lista y se asigna una brigada. Las coordenadas del centroide se proponen con las de la cabecera municipal y se pueden ajustar con la lectura del GPS.
+3. **Registrar inspección.** Se registran el conglomerado inspeccionado y la fecha.
+4. **Registrar conteo.** Se registran los fustales, latizales y brinzales de cada subparcela. Solo aparecen las subparcelas que todavía no tienen conteo.
+5. **Registrar muestra.** Se registran el nombre común y el uso de la especie. La muestra queda pendiente de clasificación.
+6. **Clasificar muestra.** Se registran el género y la especie que determina el laboratorio.
+7. **Consultar inspección.** Se muestra toda la información relacionada con una inspección.
 
-The application is organized into three main layers: the user interface, application logic, and data storage.
+### Ayudas para el usuario
 
-```mermaid
-flowchart TD
-    A["User"] --> B["Graphical Interface"]
-    B --> C["Application Logic"]
-    C --> D["Record Management"]
-    C --> E["Inspection Queries"]
-    C --> F["Data Validation"]
-    D --> G["CSV Storage"]
-    E --> G
-    G --> H["Stored Records"]
-    H --> E
-    E --> I["Results Display"]
-    F --> D
-```
+- **Barra de resumen** con la cantidad de registros de cada tipo y las muestras sin clasificar.
+- **Instrucciones** del paso actual, debajo del menú.
+- **Panel de requisitos** que marca cada dato como `[Listo]` o `[Falta]` mientras se llena el formulario. El botón **Guardar** se activa solo cuando todos los requisitos están completos.
+- **Listas desplegables** en los campos que piden información específica: departamento, municipio, profesión, uso, subparcela y los códigos existentes. Cada código va acompañado de una descripción, por ejemplo `C1 - Quibdó, Chocó`.
+- **Mensajes de confirmación** que indican cuál es el siguiente paso del proceso.
 
-### Main Components
+## Arquitectura
 
-**User Interface**
+El programa se ejecuta en una sola celda de forma procedural, en este orden: capa de datos, capa lógica y capa de presentación.
 
-Provides menus, buttons, text fields, numerical inputs, and dropdown lists for interacting with the application.
+### Capa de datos
 
-**Application Logic**
+Lee y escribe los archivos `.csv`.
 
-Contains the functions responsible for registering records, generating identifiers, searching for existing data, and retrieving related inspection information.
-
-**Data Storage**
-
-Uses separate CSV files to store each type of record. The data is loaded into Python lists when the application starts and written back to the corresponding files when records are registered.
-
-## Data Model
-
-The application uses five CSV files connected through identifier fields.
-
-```mermaid
-erDiagram
-    BRIGADES ||--o{ CLUSTERS : assigned_to
-    CLUSTERS ||--o{ INSPECTIONS : contains
-    INSPECTIONS ||--o{ COUNTS : records
-    INSPECTIONS ||--o{ SAMPLES : contains
-
-    BRIGADES {
-        string brigade PK
-        string leader
-        string professionals
-        string co_researchers
-    }
-
-    CLUSTERS {
-        string cluster PK
-        string department
-        string municipality
-        float latitude
-        float longitude
-        string brigade FK
-    }
-
-    INSPECTIONS {
-        string inspection PK
-        string cluster FK
-    }
-
-    COUNTS {
-        string inspection FK
-        int subplot
-        int mature_trees
-        int saplings
-        int seedlings
-    }
-
-    SAMPLES {
-        string code PK
-        string inspection FK
-        string common_name
-        string usage
-        string scientific_name
-    }
-```
-
-The diagram represents the logical relationships used by the application. CSV files do not enforce primary-key or foreign-key constraints automatically; relationships are managed through the identifier values stored in each record.
-
-### Data Files
-
-| File | Stored Information |
+| Función | Descripción |
 |---|---|
-| `brigadas.csv` | Team leaders, professionals, and local co-researchers. |
-| `conglomerados.csv` | Geographic locations and assigned teams. |
-| `inspecciones.csv` | Inspections and their associated clusters. |
-| `conteos.csv` | Tree counts by subplot. |
-| `muestras.csv` | Botanical samples and their usage categories. |
+| `guardar(nombre)` | Escribe en su archivo `.csv` la lista de registros indicada |
+| `hayDatos()` | Indica si existe al menos un registro |
+| `cargarDatosPrueba()` | Carga un conjunto de datos de ejemplo |
 
-### Botanical Sample Categories
+Al iniciar, el programa carga los archivos existentes y crea `municipios.csv` si no existe.
 
-Each sample can be classified according to its intended use:
+### Capa lógica
 
-- **Medicinal:** Species used for medicinal purposes.
-- **Alimenticio (Food):** Species used as food.
-- **Maderable (Timber):** Species used for timber.
+Contiene las reglas del inventario y las búsquedas.
 
-The scientific name may be left empty when identification is still pending.
-
-## Workflow
-
-The application follows a sequence of operations based on the relationships between records.
-
-```mermaid
-flowchart TD
-    A["Start Application"] --> B["Load CSV Files"]
-    B --> C{"Do Any CSV Files Exist?"}
-    C -- "No" --> D["Create Initial Sample Data"]
-    C -- "Yes" --> E["Load Available Records"]
-    D --> F["Display Main Menu"]
-    E --> F
-    F --> G{"Select Operation"}
-    G --> H["Register Brigade"]
-    G --> I["Register Cluster"]
-    G --> J["Register Inspection"]
-    G --> K["Register Tree Count"]
-    G --> L["Register Botanical Sample"]
-    G --> M["Consult Inspection"]
-    H --> N["Save to CSV"]
-    I --> N
-    J --> N
-    K --> N
-    L --> N
-    M --> O["Display Related Information"]
-    N --> F
-    O --> F
-```
-
-### Recommended Registration Sequence
-
-1. Register a field team.
-2. Register a geographic cluster and assign a team.
-3. Register an inspection associated with the cluster.
-4. Record tree counts for the inspection's subplots.
-5. Register botanical samples associated with the inspection.
-6. Consult the inspection to review its related information.
-
-Following this sequence helps maintain consistency between related records.
-
-## Installation and Execution
-
-### Requirements
-
-- Python 3.9 or later recommended.
-- Jupyter Notebook or JupyterLab.
-- The `ipywidgets` and `IPython` libraries.
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/apabon42008-hub/PARCIAL-3---INVENTARIO-FORESTAL-NACIONAL.git
-cd PARCIAL-3---INVENTARIO-FORESTAL-NACIONAL
-```
-
-### 2. Install Dependencies
-
-```bash
-pip install ipywidgets ipython
-```
-
-If Jupyter Notebook is not already installed:
-
-```bash
-pip install notebook
-```
-
-### 3. Run the Application
-
-Start Jupyter Notebook:
-
-```bash
-jupyter notebook
-```
-
-Open the notebook containing the application code and execute the cell with the complete program.
-
-**Note:** The application uses `ipywidgets` and `IPython.display`. It is designed to run in an interactive IPython/Jupyter environment rather than as a standalone desktop application.
-
-### 4. Initial Data Setup
-
-If none of the five CSV files exists, the application creates and saves a predefined sample dataset.
-
-If at least one CSV file already exists, the application loads the available files without recreating the entire initial dataset.
-
-For a complete demonstration dataset, run the application in a clean directory where none of the CSV files exists.
-
-## How to Use
-
-After execution, the interface displays six main operations:
-
-| Operation | Description |
+| Función | Descripción |
 |---|---|
-| Register Brigade | Enter the team leader, professionals, and local co-researchers. |
-| Register Cluster | Enter the department, municipality, coordinates, and assigned team. |
-| Register Inspection | Select an existing geographic cluster. |
-| Register Tree Count | Select an inspection and enter the subplot and tree counts. |
-| Register Sample | Select an inspection and enter the common name, usage category, and scientific name. |
-| Consult Inspection | Display the location, assigned team, tree counts, and botanical samples associated with the selected inspection. |
+| `buscar` / `filtrar` | Devuelven el primer registro o todos los registros que cumplen una condición |
+| `pendientes()` | Lista las muestras sin nombre científico |
+| `nuevoCodigo(nombre, letra)` | Genera el siguiente código (B1, C1, I1, M1…) |
+| `textoValido` / `personaValida` | Validan textos y nombres completos |
+| `formatoCientifico(genero, especie)` | Da formato al nombre científico (`Cedrela odorata`) |
+| `municipiosDe` / `ubicacionMunicipio` | Consultan los municipios de un departamento y sus coordenadas |
+| `coordenadasEnMunicipio` | Verifica que el centroide esté dentro de la zona del municipio |
+| `subparcelasLibres(inspeccion)` | Lista las subparcelas que aún no tienen conteo |
+| `registrar` / `clasificar` | Agregan o actualizan registros y los guardan |
+| `consultarInspeccion(codigo)` | Reúne toda la información de una inspección |
 
-### Example Inspection Output
+### Capa de presentación
 
-When an inspection is selected, the application displays its associated information in organized sections.
+Maneja la interfaz con `ipywidgets`.
 
-```text
-INSPECTION I001
+| Función | Descripción |
+|---|---|
+| `clicMenu` | Muestra el formulario del paso elegido |
+| `clicAccion` | Guarda o consulta según el paso actual |
+| `clicAgregar` | Agrega profesionales y coinvestigadores a la brigada |
+| `actualizarRequisitos` | Actualiza el panel de requisitos y habilita el botón Guardar |
+| `actualizarMenu` | Habilita los pasos del menú y actualiza el resumen |
+| `cargarMunicipios` / `llenarCoordenadas` / `cargarSubparcelas` | Actualizan las listas que dependen de otra |
+| `limpiarCampos` / `cargarLista` / `opcionesDe` | Limpian el formulario y cargan las opciones de las listas |
 
-CLUSTER C001
-Location: Quibdo, Choco
-Centroid: 5.6947 -76.6583
+## Archivos de datos
 
-BRIGADE B001
-Leader: Jair Sanchez
-Professionals: Ana Rojas (botanist), Luis Mena (forest engineer)
-Local co-researchers: Ever Blandon, Marta Palacios
+| Archivo | Columnas |
+|---|---|
+| `brigadas.csv` | brigada, lider, profesionales, coinvestigadores |
+| `conglomerados.csv` | conglomerado, departamento, municipio, latitud, longitud, brigada |
+| `inspecciones.csv` | inspeccion, conglomerado, fecha |
+| `conteos.csv` | inspeccion, subparcela, fustales, latizales, brinzales |
+| `muestras.csv` | codigo, inspeccion, nombreComun, uso, nombreCientifico |
+| `municipios.csv` | departamento, municipio, latitud, longitud |
 
-TREE COUNTS
-Subplot 1 | Mature trees: 12 | Saplings: 25 | Seedlings: 40
-Subplot 2 | Mature trees: 9 | Saplings: 18 | Seedlings: 35
+Los archivos se crean automáticamente en la carpeta de trabajo de Colab la primera vez que se guarda un registro.
 
-BOTANICAL SAMPLES
-M001 | Cedar | Maderable | Cedrela odorata
-M002 | Cat's claw | Medicinal | Uncaria tomentosa
-```
+## Cómo ejecutarlo
 
-This output is illustrative and based on the sample records included in the source code. The application displays the original stored values, which may use Spanish labels and names.
+1. Abra `IFN_Inventario_Forestal.ipynb` en [Google Colab](https://colab.research.google.com/), con el botón de arriba o subiendo el archivo.
+2. Ejecute la única celda del notebook.
+3. Empiece por **1. Registrar brigada**, o pulse **Cargar datos de prueba** para ver el programa con información de ejemplo.
 
-### Refreshing Inspections
+No necesita instalar nada. Colab ya incluye `ipywidgets`, y el resto de librerías (`csv` y `datetime`) son parte de Python.
 
-The **Update Inspections** button reloads the inspection records from `inspecciones.csv` and refreshes the available options in the inspection dropdown.
+> Colab conserva los archivos `.csv` mientras dure la sesión. Para empezar desde cero, borre esos archivos desde el panel de archivos o use **Entorno de ejecución → Desconectar y borrar el entorno de ejecución**.
 
-This allows newly registered inspections to appear in the consultation interface without restarting the application.
+## Reglas de validación
 
-## Project Structure
+- Los nombres de personas deben tener al menos nombre y apellido. Solo se aceptan letras, espacios, guiones, apóstrofes y puntos, con un máximo de 60 caracteres.
+- El centroide debe estar a menos de 0,5 grados (unos 55 km) de la cabecera del municipio elegido.
+- La fecha de la inspección no puede ser posterior a la fecha actual.
+- Cada conglomerado tiene 5 subparcelas, y cada una se puede contar una sola vez por inspección.
+- Los conteos de árboles van de 0 a 1.000 por categoría.
+- El género y la especie deben ser una palabra cada uno. El nombre científico se guarda con el formato de la nomenclatura binomial.
 
-The following is a recommended repository structure:
+## Limitaciones
 
-```text
-PARCIAL-3---INVENTARIO-FORESTAL-NACIONAL/
-|
-|-- README.md
-|-- forest_inventory.ipynb
-|
-|-- brigadas.csv
-|-- conglomerados.csv
-|-- inspecciones.csv
-|-- conteos.csv
-|-- muestras.csv
-```
+- `municipios.csv` incluye las capitales de los 33 departamentos y algunos municipios con actividad forestal, unos 55 en total. Para agregar más municipios basta con añadir filas al archivo.
+- Las coordenadas de las cabeceras municipales son aproximadas y sirven como punto de partida, no como dato oficial.
+- El programa no permite editar ni borrar registros ya guardados.
 
-The `forest_inventory.ipynb` filename is an example. Replace it with the actual notebook filename used in the repository.
+## Autor
 
-The CSV files are generated automatically when needed. They do not have to be committed to GitHub if you prefer the application to initialize its sample dataset when run in a clean directory.
-
-## Data Validation
-
-The application implements basic checks to prevent incomplete operations and invalid numerical values.
-
-- Requires a team leader's name when registering a brigade.
-- Checks that the basic cluster information is provided and a brigade is selected.
-- Requires a valid cluster selection when registering an inspection.
-- Ensures that subplot numbers and tree counts are non-negative integers.
-- Requires an inspection selection and a common name when registering a sample.
-- Reports when an inspection or its related information cannot be found.
-- Handles selected file access, input conversion, and missing-field errors.
-
-These validations provide basic input control but do not replace comprehensive data integrity checks.
-
-## Future Improvements
-
-Potential enhancements for future versions include:
-
-- Geographic validation for latitude and longitude.
-- Duplicate identifier prevention and validation of record relationships.
-- Editing and deleting existing records.
-- PDF and Excel report generation.
-- Statistical charts for forest inventory data.
-- Map-based visualization of geographic clusters.
-- More comprehensive validation of required fields and numerical inputs.
-- Automated tests for the application's main functions.
-- Migration from CSV storage to a relational database when needed.
-
-## Project Scope
-
-This project provides basic forest inventory data registration and consultation through an interactive Python interface.
-
-It uses CSV files for persistent storage and does not require a dedicated database server or backend service.
-
-The current implementation focuses on registration and consultation operations. Editing and deleting existing records, map visualization, report generation, and advanced database integrity enforcement are not currently implemented.
-
-## Author
-
-**Andres Felipe Pabon Barbosa**
-
-Software Engineering Student
-
-GitHub Repository: [PARCIAL-3---INVENTARIO-FORESTAL-NACIONAL](https://github.com/apabon42008-hub/PARCIAL-3---INVENTARIO-FORESTAL-NACIONAL)
-
-## Keywords
-
-Python, Forest Inventory, Forest Inspections, Biodiversity, CSV, ipywidgets, Data Management, Geographic Clusters, Botanical Sampling.
-ing writing-block.md…]()
+**Andrés Felipe Pabón Barbosa**
+Programación I, Universidad de Santander
+Docente: Carlos Carrascal
