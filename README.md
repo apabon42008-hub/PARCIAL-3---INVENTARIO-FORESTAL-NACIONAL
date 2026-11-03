@@ -2,10 +2,6 @@
 
 Software de apoyo para el registro y la consulta de la información del Inventario Forestal Nacional del IDEAM. Es el trabajo final de semestre del curso **Programación I** de la Universidad de Santander.
 
-[![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/TU_USUARIO/TU_REPOSITORIO/blob/main/IFN_Inventario_Forestal.ipynb)
-
-> Para que el botón funcione, reemplace `TU_USUARIO/TU_REPOSITORIO` en el enlace por la ruta real del repositorio.
-
 ## Contexto
 
 El IDEAM (Instituto de Hidrología, Meteorología y Estudios Ambientales) adelanta el Inventario Forestal Nacional. Para hacerlo, el territorio colombiano se divide en **conglomerados**, y cada uno se asigna a una **brigada**. Una brigada está formada por un líder, profesionales de distintas ramas y coinvestigadores locales.
